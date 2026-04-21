@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pitch-green: #2d8a4e;
+  --color-pitch-line: #ffffff;
+  --color-team-home: #3b82f6;
+  --color-team-away: #ef4444;
+  --color-ball: #fbbf24;
+}
