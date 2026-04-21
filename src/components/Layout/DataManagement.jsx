@@ -113,15 +113,34 @@ export default function DataManagement({ open, onClose }) {
     }
   }
 
+  async function findGistId() {
+    const res = await fetch(`${GIST_API}?per_page=30`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Kunde inte hämta Gists från GitHub.');
+    const gists = await res.json();
+    const match = gists.find((g) => g.files?.[GIST_FILENAME]);
+    if (!match) return null;
+    localStorage.setItem('kfc-gist-id', match.id);
+    setGistId(match.id);
+    return match.id;
+  }
+
   async function handleCloudPull() {
-    if (!gistId) {
-      setStatus({ type: 'error', message: 'Ingen molndata hittad. Synka upp först från en enhet som har data.' });
-      return;
-    }
     setSyncing(true);
     setStatus(null);
     try {
-      const res = await fetch(`${GIST_API}/${gistId}`, {
+      let id = gistId;
+      if (!id) {
+        id = await findGistId();
+        if (!id) {
+          setStatus({ type: 'error', message: 'Ingen molndata hittad. Synka upp först från en enhet som har data.' });
+          setSyncing(false);
+          return;
+        }
+      }
+
+      const res = await fetch(`${GIST_API}/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
