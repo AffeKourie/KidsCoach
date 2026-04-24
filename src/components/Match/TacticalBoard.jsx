@@ -7,9 +7,13 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
   const [date, setDate] = useState(lineup?.date || new Date().toISOString().split('T')[0]);
   const [formation, setFormation] = useState(lineup?.formation || '3-3-2');
   const [homePlayers, setHomePlayers] = useState(lineup?.homePlayers || []);
+  const [subs, setSubs] = useState(lineup?.subs || Array.from({ length: 4 }, (_, i) => ({
+    id: `sub-${i}`, playerId: null, playerName: '', playerNumber: '',
+  })));
   const [awayPlayers, setAwayPlayers] = useState(lineup?.awayPlayers || []);
   const [ball, setBall] = useState(lineup?.ball || null);
   const [dragging, setDragging] = useState(null);
+  const didDrag = useRef(false);
   const [showAssign, setShowAssign] = useState(false);
   const pitchRef = useRef(null);
 
@@ -19,6 +23,9 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
       setDate(lineup.date || new Date().toISOString().split('T')[0]);
       setFormation(lineup.formation || '3-3-2');
       setHomePlayers(lineup.homePlayers || []);
+      setSubs(lineup.subs || Array.from({ length: 4 }, (_, i) => ({
+        id: `sub-${i}`, playerId: null, playerName: '', playerNumber: '',
+      })));
       setAwayPlayers(lineup.awayPlayers || []);
       setBall(lineup.ball || null);
     }
@@ -60,19 +67,46 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
     ));
   }
 
+  function assignSub(subIndex, player) {
+    setSubs(subs.map((s, i) =>
+      i === subIndex
+        ? { ...s, playerId: player.id, playerName: player.name, playerNumber: player.number }
+        : s
+    ));
+  }
+
+  function clearSub(subIndex) {
+    setSubs(subs.map((s, i) =>
+      i === subIndex
+        ? { ...s, playerId: null, playerName: '', playerNumber: '' }
+        : s
+    ));
+  }
+
   function autoAssignAll() {
     const available = [...players];
-    setHomePlayers(homePlayers.map((hp) => {
+    const newHome = homePlayers.map((hp) => {
       if (hp.playerId) return hp;
       const next = available.shift();
       if (!next) return hp;
       return { ...hp, playerId: next.id, playerName: next.name, playerNumber: next.number };
-    }));
+    });
+    const newSubs = subs.map((s) => {
+      if (s.playerId) return s;
+      const next = available.shift();
+      if (!next) return s;
+      return { ...s, playerId: next.id, playerName: next.name, playerNumber: next.number };
+    });
+    setHomePlayers(newHome);
+    setSubs(newSubs);
   }
 
   function clearAll() {
     setHomePlayers(homePlayers.map((hp) => ({
       ...hp, playerId: null, playerName: '', playerNumber: '',
+    })));
+    setSubs(subs.map((s) => ({
+      ...s, playerId: null, playerName: '', playerNumber: '',
     })));
   }
 
@@ -104,12 +138,14 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
 
   function handlePointerDown(type, id, e) {
     e.preventDefault();
+    didDrag.current = false;
     setDragging({ type, id });
   }
 
   const handlePointerMove = useCallback((e) => {
     if (!dragging) return;
     e.preventDefault();
+    didDrag.current = true;
     const pos = getPosition(e);
     if (!pos) return;
 
@@ -149,6 +185,7 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
       date,
       formation,
       homePlayers,
+      subs,
       awayPlayers,
       ball,
     });
@@ -169,10 +206,14 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
     );
   }
 
-  const assignedCount = homePlayers.filter((hp) => hp.playerId).length;
-  const unassignedPlayers = players.filter(
-    (p) => !homePlayers.some((hp) => hp.playerId === p.id)
-  );
+  const assignedOnField = homePlayers.filter((hp) => hp.playerId).length;
+  const assignedOnBench = subs.filter((s) => s.playerId).length;
+  const assignedCount = assignedOnField + assignedOnBench;
+  const allAssignedIds = [
+    ...homePlayers.filter((hp) => hp.playerId).map((hp) => hp.playerId),
+    ...subs.filter((s) => s.playerId).map((s) => s.playerId),
+  ];
+  const unassignedPlayers = players.filter((p) => !allAssignedIds.includes(p.id));
 
   return (
     <div>
@@ -225,7 +266,7 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-700">
-              Spelare på planen ({assignedCount} av {homePlayers.length})
+              Tilldelade spelare ({assignedCount} av {homePlayers.length + subs.length})
             </h3>
             <div className="flex gap-2">
               {assignedCount < homePlayers.length && (
@@ -266,6 +307,33 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
                       } else {
                         const p = players.find((pl) => pl.id === e.target.value);
                         if (p) assignPlayer(index, p);
+                      }
+                    }}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                  >
+                    <option value="">– Välj spelare –</option>
+                    {players.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        #{p.number} {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+              <div className="border-t border-gray-200 mt-1 pt-2">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Avbytare</span>
+              </div>
+              {subs.map((sub, index) => (
+                <div key={sub.id} className="flex items-center gap-3">
+                  <span className="w-10 text-xs font-semibold text-gray-500">AVB</span>
+                  <select
+                    value={sub.playerId || ''}
+                    onChange={(e) => {
+                      if (e.target.value === '') {
+                        clearSub(index);
+                      } else {
+                        const p = players.find((pl) => pl.id === e.target.value);
+                        if (p) assignSub(index, p);
                       }
                     }}
                     className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
@@ -324,78 +392,110 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
         )}
       </div>
 
-      {/* Pitch */}
-      <div
-        ref={pitchRef}
-        className="relative select-none touch-none"
-        style={{ aspectRatio: '68 / 95' }}
-      >
-        <Pitch />
+      {/* Pitch + Bench */}
+      <div className="flex gap-3">
+        {/* Pitch */}
+        <div
+          ref={pitchRef}
+          className="relative select-none touch-none flex-1"
+          style={{ aspectRatio: '68 / 95' }}
+        >
+          <Pitch />
 
-        {homePlayers.map((player, index) => (
-          <div
-            key={player.id}
-            onPointerDown={(e) => handlePointerDown('home', player.id, e)}
-            className="absolute flex flex-col items-center cursor-grab active:cursor-grabbing"
-            style={{
-              left: `${player.x}%`,
-              top: `${player.y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: dragging?.id === player.id ? 50 : 10,
-            }}
-          >
-            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold ${
-              player.playerId ? 'bg-blue-500' : 'bg-blue-300'
-            }`}>
-              {player.playerNumber || index + 1}
+          {homePlayers.map((player, index) => (
+            <div
+              key={player.id}
+              onPointerDown={(e) => handlePointerDown('home', player.id, e)}
+              className="absolute flex flex-col items-center cursor-grab active:cursor-grabbing"
+              style={{
+                left: `${player.x}%`,
+                top: `${player.y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: dragging?.id === player.id ? 50 : 10,
+              }}
+            >
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold ${
+                player.playerId ? 'bg-blue-500' : 'bg-blue-300'
+              }`}>
+                {player.playerNumber || index + 1}
+              </div>
+              <span className={`mt-0.5 text-[10px] sm:text-xs font-semibold text-white px-1.5 py-0.5 rounded whitespace-nowrap ${
+                player.playerId ? 'bg-blue-600/80' : 'bg-blue-400/70'
+              }`}>
+                {player.playerName || player.role}
+              </span>
             </div>
-            <span className={`mt-0.5 text-[10px] sm:text-xs font-semibold text-white px-1.5 py-0.5 rounded whitespace-nowrap ${
-              player.playerId ? 'bg-blue-600/80' : 'bg-blue-400/70'
-            }`}>
-              {player.playerName || player.role}
-            </span>
-          </div>
-        ))}
+          ))}
 
-        {awayPlayers.map((player) => (
-          <div
-            key={player.id}
-            onPointerDown={(e) => handlePointerDown('away', player.id, e)}
-            className="absolute flex flex-col items-center cursor-grab active:cursor-grabbing"
-            style={{
-              left: `${player.x}%`,
-              top: `${player.y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: dragging?.id === player.id ? 50 : 10,
-            }}
-          >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500 border-2 border-white shadow-lg flex items-center justify-center">
-              <button
-                onClick={(e) => { e.stopPropagation(); removeAwayPlayer(player.id); }}
-                className="text-white text-xs font-bold"
-              >
-                ✕
-              </button>
+          {awayPlayers.map((player) => (
+            <div
+              key={player.id}
+              onPointerDown={(e) => handlePointerDown('away', player.id, e)}
+              className="absolute flex flex-col items-center cursor-grab active:cursor-grabbing"
+              style={{
+                left: `${player.x}%`,
+                top: `${player.y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: dragging?.id === player.id ? 50 : 10,
+              }}
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500 border-2 border-white shadow-lg flex items-center justify-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (!didDrag.current) removeAwayPlayer(player.id); }}
+                  className="text-white text-xs font-bold"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {ball && (
-          <div
-            onPointerDown={(e) => handlePointerDown('ball', 'ball', e)}
-            className="absolute cursor-grab active:cursor-grabbing"
-            style={{
-              left: `${ball.x}%`,
-              top: `${ball.y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: dragging?.id === 'ball' ? 50 : 5,
-            }}
-          >
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-400 border-2 border-white shadow-lg flex items-center justify-center text-sm">
-              ⚽
+          {ball && (
+            <div
+              onPointerDown={(e) => handlePointerDown('ball', 'ball', e)}
+              className="absolute cursor-grab active:cursor-grabbing"
+              style={{
+                left: `${ball.x}%`,
+                top: `${ball.y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: dragging?.id === 'ball' ? 50 : 5,
+              }}
+            >
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-400 border-2 border-white shadow-lg flex items-center justify-center text-sm">
+                ⚽
+              </div>
             </div>
+          )}
+        </div>
+
+        {/* Substitute bench */}
+        <div className="w-16 sm:w-20 flex flex-col items-center pt-4">
+          <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 writing-mode-vertical"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          >
+            Avbytare
+          </span>
+          <div className="flex flex-col gap-4">
+            {subs.map((sub, index) => (
+              <div key={sub.id} className="flex flex-col items-center">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 shadow-md flex items-center justify-center text-xs sm:text-sm font-bold ${
+                  sub.playerId
+                    ? 'bg-blue-500 border-white text-white'
+                    : 'bg-gray-200 border-gray-300 text-gray-400'
+                }`}>
+                  {sub.playerNumber || index + 10}
+                </div>
+                <span className={`mt-0.5 text-[9px] sm:text-[10px] font-medium px-1 py-0.5 rounded whitespace-nowrap max-w-[60px] sm:max-w-[72px] truncate text-center ${
+                  sub.playerId
+                    ? 'text-blue-700 bg-blue-50'
+                    : 'text-gray-400'
+                }`}>
+                  {sub.playerName || `Avb ${index + 1}`}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Save */}

@@ -20,12 +20,20 @@ export default function MatchPage({ players, lineups, setLineups }) {
       role: pos.role,
     }));
 
+    const subs = Array.from({ length: 4 }, (_, i) => ({
+      id: `sub-${i}`,
+      playerId: null,
+      playerName: '',
+      playerNumber: '',
+    }));
+
     setEditingLineup({
       id: crypto.randomUUID(),
       name: '',
       date: new Date().toISOString().split('T')[0],
       formation: defaultFormation,
       homePlayers,
+      subs,
       awayPlayers: [],
       ball: null,
     });
