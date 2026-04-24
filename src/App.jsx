@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { defaultExercises } from './data/exercises';
+import defaultPlayers from './data/players.json';
 import Navigation from './components/Layout/Navigation';
 import DataManagement from './components/Layout/DataManagement';
 import TrainingPage from './components/Training/TrainingPage';
@@ -11,7 +12,7 @@ const EXERCISE_DATA_VERSION = 2;
 
 function App() {
   const [activeTab, setActiveTab] = useState('training');
-  const [players, setPlayers] = useLocalStorage('kfc-players', []);
+  const [players, setPlayers] = useLocalStorage('kfc-players', defaultPlayers);
   const [exercises, setExercises] = useLocalStorage('kfc-exercises', defaultExercises);
   const [sessions, setSessions] = useLocalStorage('kfc-sessions', []);
   const [lineups, setLineups] = useLocalStorage('kfc-lineups', []);
