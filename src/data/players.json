@@ -1,15 +1,15 @@
 [
-  { "id": "p1",  "name": "Spelare1",  "number": "1" },
-  { "id": "p2",  "name": "Spelare2",  "number": "2" },
-  { "id": "p3",  "name": "Spelare3",  "number": "3" },
-  { "id": "p4",  "name": "Spelare4",  "number": "4" },
-  { "id": "p5",  "name": "Spelare5",  "number": "5" },
-  { "id": "p6",  "name": "Spelare6",  "number": "6" },
-  { "id": "p7",  "name": "Spelare7",  "number": "7" },
-  { "id": "p8",  "name": "Spelare8",  "number": "8" },
-  { "id": "p9",  "name": "Spelare9",  "number": "9" },
-  { "id": "p10", "name": "Spelare10", "number": "10" },
-  { "id": "p11", "name": "Spelare11", "number": "11" },
-  { "id": "p12", "name": "Spelare12", "number": "12" },
-  { "id": "p13", "name": "Spelare13", "number": "13" }
+  { "id": "p1",  "name": "Alex",     "number": "99" },
+  { "id": "p2",  "name": "Ferit",    "number": "10" },
+  { "id": "p3",  "name": "Michael",  "number": "14" },
+  { "id": "p4",  "name": "Serrhi",   "number": "4" },
+  { "id": "p5",  "name": "Lukas",    "number": "15" },
+  { "id": "p6",  "name": "Andrew",   "number": "16" },
+  { "id": "p7",  "name": "Wassim",   "number": "7" },
+  { "id": "p8",  "name": "Angelo",   "number": "19" },
+  { "id": "p9",  "name": "Ninmmar",  "number": "8" },
+  { "id": "p10", "name": "Benji",    "number": "17" },
+  { "id": "p11", "name": "Jakob",    "number": "12" },
+  { "id": "p12", "name": "Tomas",    "number": "18" },
+  { "id": "p13", "name": "Gabriel",  "number": "11" }
 ]

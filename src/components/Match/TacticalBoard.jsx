@@ -84,16 +84,21 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
   }
 
   function autoAssignAll() {
-    const available = [...players];
+    const usedIds = new Set([
+      ...homePlayers.filter((hp) => hp.playerId).map((hp) => hp.playerId),
+      ...subs.filter((s) => s.playerId).map((s) => s.playerId),
+    ]);
+    const available = players.filter((p) => !usedIds.has(p.id));
+    let idx = 0;
     const newHome = homePlayers.map((hp) => {
       if (hp.playerId) return hp;
-      const next = available.shift();
+      const next = available[idx++];
       if (!next) return hp;
       return { ...hp, playerId: next.id, playerName: next.name, playerNumber: next.number };
     });
     const newSubs = subs.map((s) => {
       if (s.playerId) return s;
-      const next = available.shift();
+      const next = available[idx++];
       if (!next) return s;
       return { ...s, playerId: next.id, playerName: next.name, playerNumber: next.number };
     });
@@ -269,7 +274,7 @@ export default function TacticalBoard({ lineup, players, onSave, onNew }) {
               Tilldelade spelare ({assignedCount} av {homePlayers.length + subs.length})
             </h3>
             <div className="flex gap-2">
-              {assignedCount < homePlayers.length && (
+              {assignedCount < homePlayers.length + subs.length && (
                 <button
                   onClick={autoAssignAll}
                   className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors"

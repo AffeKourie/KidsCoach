@@ -9,6 +9,7 @@ import MatchPage from './components/Match/MatchPage';
 import PlayersPage from './components/Players/PlayersPage';
 
 const EXERCISE_DATA_VERSION = 2;
+const PLAYER_DATA_VERSION = 4;
 
 function App() {
   const [activeTab, setActiveTab] = useState('training');
@@ -18,6 +19,7 @@ function App() {
   const [lineups, setLineups] = useLocalStorage('kfc-lineups', []);
   const [favorites, setFavorites] = useLocalStorage('kfc-favorites', []);
   const [dataVersion, setDataVersion] = useLocalStorage('kfc-data-version', 0);
+  const [playerDataVersion, setPlayerDataVersion] = useLocalStorage('kfc-player-data-version', 0);
   const [showDataPanel, setShowDataPanel] = useState(false);
 
   useEffect(() => {
@@ -25,6 +27,10 @@ function App() {
       const customExercises = exercises.filter((e) => e.isCustom);
       setExercises([...defaultExercises, ...customExercises]);
       setDataVersion(EXERCISE_DATA_VERSION);
+    }
+    if (playerDataVersion < PLAYER_DATA_VERSION) {
+      setPlayers(defaultPlayers);
+      setPlayerDataVersion(PLAYER_DATA_VERSION);
     }
   }, []);
 
